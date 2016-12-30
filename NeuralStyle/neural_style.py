@@ -1,14 +1,12 @@
 # Copyright (c) 2015-2016 Anish Athalye. Released under GPLv3.
 
+import math
 import os
+from argparse import ArgumentParser
 
 import numpy as np
 import scipy.misc
-
 from stylize import stylize
-
-import math
-from argparse import ArgumentParser
 
 # default arguments
 CONTENT_WEIGHT = 5e0
