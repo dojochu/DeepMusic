@@ -1,11 +1,10 @@
 # Copyright (c) 2015-2016 Anish Athalye. Released under GPLv3.
 
-import vgg
-
-import tensorflow as tf
-import numpy as np
-
 from sys import stderr
+
+import numpy as np
+import tensorflow as tf
+import vgg
 
 CONTENT_LAYER = 'relu4_2'
 STYLE_LAYERS = ('relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1')
@@ -36,7 +35,7 @@ def stylize(network, initial, content, styles, iterations,
 
     # compute content features in feedforward mode
     g = tf.Graph()
-    with g.as_default(), g.device('/cpu:0'), tf.Session() as sess:
+    with g.as_default(), g.device('/device:CPU:0'), tf.Session() as sess:
         image = tf.placeholder('float', shape=shape)
         net, mean_pixel = vgg.net(network, image)
         content_pre = np.array([vgg.preprocess(content, mean_pixel)])
@@ -46,7 +45,7 @@ def stylize(network, initial, content, styles, iterations,
     # compute style features in feedforward mode
     for i in range(len(styles)):
         g = tf.Graph()
-        with g.as_default(), g.device('/cpu:0'), tf.Session() as sess:
+        with g.as_default(), g.device('/device:CPU:0'), tf.Session() as sess:
             image = tf.placeholder('float', shape=style_shapes[i])
             net, _ = vgg.net(network, image)
             style_pre = np.array([vgg.preprocess(styles[i], mean_pixel)])
