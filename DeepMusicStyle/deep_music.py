@@ -1,29 +1,38 @@
-import musicCNN.music_tagger_cnn as mtc
-import musicCNN.music_tagger_crnn as mtcr
-import musicCNN.audio_processor as ap
+
+from .sounds_mixture import mix_music
 import numpy as np
 import tensorflow as tf
+import os
 
-audio_path = 'music_data/Sparks.wav'
+audio_path = 'DeepMusicStyle/music_data/The Wanted - Glad You Came (Instrumental Version).wav'
+style_path = 'DeepMusicStyle/music_data/Hallelujah-Pentatonix.wav'
+model_path = 'musicCNN/data/music_tagger_crnn_weights_tensorflow.h5'
 #,
 #              'NeuralStyle/examples/Heartbeats.wav',
 #              'NeuralStyle/examples/.wav',
 #              'NeuralStyle/Children (Club Radio Edit).wav',
 #              'NeuralStyle/The Wanted - Glad You Came (Instrumental Version).wav'
 
-music_tagger_model = mtcr.MusicTaggerCRNN(weights='msd', include_top=True)
-#music_tagger_model = mtc.MusicTaggerCNN(weights='msd', include_top=True)
+CONTENT_WEIGHT = 5e0
+STYLE_WEIGHT = 1e2
+TV_WEIGHT = 1e2
+LEARNING_RATE = 1e1
+STYLE_SCALE = 1.0
+ITERATIONS = 1000
 
-#melgrams = np.zeros((0, 1, 96, 1366))
-melgrams = ap.compute_melgram(audio_path)
-#for path in audio_path:
-#    melgrams = np.concatenate(melgrams,ap.compute_melgram(path))
+(model, result_image) =  mix_music(
+    network_path=os.path.abspath(model_path),
+    initial_song=None,
+    content_song_path=os.path.abspath(audio_path),
+    style_song_path=os.path.abspath(style_path),
+    iterations=ITERATIONS,
+    content_weight=CONTENT_WEIGHT,
+    style_weight=STYLE_WEIGHT,
+    style_blend_weights=1.0,
+    tv_weight=TV_WEIGHT,
+    learning_rate=LEARNING_RATE,
+    print_iterations=None,
+    checkpoint_iterations=None
+)
 
-sess = tf.Session()
 
-layer0Output = music_tagger_model.get_layer('bn_0_freq').get_output_at(0).eval(melgrams, sess)
-print(layer0Output)
-
-#features = music_tagger_model.predict(x=melgrams)
-
-#print(features)
