@@ -19,12 +19,8 @@ def read_audio(audio_path):
         src = src[int((n_sample - n_sample_fit) / 2):int((n_sample + n_sample_fit) / 2)]
     return src
 
-def compute_melgram(src):
-    SR = 12000
-    N_FFT = 512
-    N_MELS = 96
-    HOP_LEN = 256
-    DURA = 29.12  # to make it 1366 frame..
+def compute_melgram(src, SR=12000, N_FFT=512, N_MELS=96, HOP_LEN=256, DURA=29.0):
+
 
     ret = logamplitude(melspectrogram(y=src, sr=SR, hop_length=HOP_LEN,
                         n_fft=N_FFT, n_mels=N_MELS) ** 2,
