@@ -1,5 +1,8 @@
 import tensorflow as tf
-from DeepMusicStyle.reverse_melspectrogram import read_audio, compute_melgram
+from keras.layers import Input, Dense
+from keras.models import Model
+#from DeepMusicStyle.reverse_melspectrogram import read_audio, compute_melgram
+from musicCNN.audio_processor import compute_melgram
 import pandas as pd
 import numpy as np
 
@@ -23,35 +26,31 @@ NUM_LABELS = 188
 TEST_SIZE = 2000
 iterations = 1000
 
+model_input = Input(shape=(FRAME_SIZE,),batch_shape=(None, FRAME_SIZE), name='initial_input',dtype='float32')
 
-input = tf.placeholder(dtype='float32',shape = (FRAME_SIZE,1))
-truth = tf.placeholder(dtype='float32', shape = (NUM_LABELS,1))
+layer = Dense(output_dim=64, activation='softmax')(model_input)
+layer2 = Dense(output_dim=25, activation='softmax')(layer)
+model_output = Dense(output_dim = NUM_LABELS, activation = 'softmax')(layer2)
 
-weights = tf.Variable(initial_value = tf.random_uniform(
-                                    shape=(NUM_LABELS,FRAME_SIZE)))
-biases = tf.Variable(initial_value = tf.random_uniform(shape=(NUM_LABELS,1)))
+model = Model(input=model_input, output=model_output)
+model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
-pred = tf.add(tf.matmul(weights, input), biases)
-
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, truth))
-
-optimize = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
-
-
-for bid in pd.unique(clip_info.batch_id):
+melgrams = np.zeros(shape=(FRAME_SIZE,))
+labels = np.zeros(shape =(NUM_LABELS))
+for bid in pd.unique(clip_info.batch_id)[:2]:
+    print('Training on batch_id: ' + bid)
     melgrams = np.zeros(shape=(FRAME_SIZE,))
-    labels = np.zeros(shape =(NUM_LABELS))
+    labels = np.zeros(shape =(NUM_LABELS,))
     for song in clip_info[clip_info['batch_id'] == bid]['mp3_path']:
-        melgrams = np.concatenate(melgrams, compute_melgram(read_audio(data_path + song)).flatten())
-        labels = np.concatenate(labels, label_info[label_info['mp3_path'] == song].filter(
-                                items=label_info.columns.tolist()[1:-1]).transpose())
-        optimize.run(feed_dict={input: melgrams, truth: labels})
+        #melgrams = np.concatenate(melgrams, compute_melgram(read_audio(data_path + song)).flatten())
+        try:
+            melgrams = np.vstack((melgrams, compute_melgram(data_path + song).flatten()))
+            add_label = label_info[label_info['mp3_path'] == song].filter(
+                        items=label_info.columns.tolist()[1:-2]).transpose().iloc[:,0]
+            labels = np.vstack((labels, add_label))
+        except FileNotFoundError:
+            continue
+    model.train_on_batch(melgrams, labels)
 
-accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(labels,1), tf.argmax(pred, 1)),tf.float32))
-
-test_x = compute_melgram(read_audio(data_path + clip_info['mp3_path'][:TEST_SIZE]))
-test_y = label_info[label_info['mp3_path'].isin(clip_info['mp3_path'][:TEST_SIZE])].filter(
-                                                    items=label_info.columns.tolist()[1:-1]).transpose()
-
-print(accuracy.eval(feed_dict={input:test_x, truth:test_y}))
+#loss_and_metrics = model.evaluate(melgrams, labels)
 
